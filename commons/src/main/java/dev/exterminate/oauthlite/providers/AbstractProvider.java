@@ -1,13 +1,8 @@
 package dev.exterminate.oauthlite.providers;
 
 import dev.exterminate.oauthlite.flows.IFlow;
-import dev.exterminate.oauthlite.util.OAuthException;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

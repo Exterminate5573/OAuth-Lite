@@ -1,6 +1,9 @@
 package dev.exterminate.oauthlite.providers;
 
+import dev.exterminate.oauthlite.data.BasicUser;
 import dev.exterminate.oauthlite.flows.IFlow;
+import dev.exterminate.oauthlite.util.OAuthException;
+import lombok.Data;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -40,4 +43,7 @@ public abstract class AbstractProvider {
                 .map(IFlow.class::cast)
                 .collect(Collectors.toCollection(ArrayList::new));
     }
+
+    public abstract BasicUser getUser(String accessToken) throws OAuthException;
+
 }

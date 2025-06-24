@@ -1,5 +1,6 @@
 package dev.exterminate.oauthlite.flows;
 
+import dev.exterminate.oauthlite.data.AuthFlowResponse;
 import dev.exterminate.oauthlite.util.OAuthException;
 
 public interface ICredentialsFlow extends IFlow {

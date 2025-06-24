@@ -1,8 +1,9 @@
 package dev.exterminate.oauthlite.flows;
 
 import com.sun.net.httpserver.HttpServer;
+import dev.exterminate.oauthlite.data.AuthCodeResponse;
+import dev.exterminate.oauthlite.data.AuthFlowResponse;
 import dev.exterminate.oauthlite.util.OAuthException;
-import lombok.Data;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -81,7 +82,7 @@ public interface IAuthCodeFlow extends IFlow {
                         exchange.sendResponseHeaders(200, responseBody.length());
                         exchange.getResponseBody().write(responseBody.getBytes());
                         exchange.getResponseBody().close();
-                        response.error = true;
+                        response.setError(true);
                         return;
                     }
                     String[] params = query.split("&");
@@ -107,7 +108,7 @@ public interface IAuthCodeFlow extends IFlow {
             server.start();
 
             // Wait for the response
-            while (!response.error && response.getCode() == null || !response.getState().equals(state)) {
+            while (!response.isError() && response.getCode() == null || !response.getState().equals(state)) {
                 try {
                     Thread.sleep(100); // Polling interval
                 } catch (InterruptedException e) {
@@ -148,10 +149,5 @@ public interface IAuthCodeFlow extends IFlow {
         return AuthFlowResponse.fromJson(request);
     }
 
-    @Data
-    class AuthCodeResponse {
-        private String code;
-        private String state;
-        private boolean error = false;
-    }
+
 }

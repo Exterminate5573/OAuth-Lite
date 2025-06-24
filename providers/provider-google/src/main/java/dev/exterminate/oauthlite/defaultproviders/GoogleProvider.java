@@ -1,5 +1,8 @@
 package dev.exterminate.oauthlite.defaultproviders;
 
+import dev.exterminate.oauthlite.data.AuthFlowResponse;
+import dev.exterminate.oauthlite.data.BasicUser;
+import dev.exterminate.oauthlite.data.DeviceCodeResponse;
 import dev.exterminate.oauthlite.flows.IAuthCodeFlow;
 import dev.exterminate.oauthlite.flows.IDeviceCodeFlow;
 import dev.exterminate.oauthlite.providers.AbstractProvider;
@@ -13,6 +16,7 @@ public class GoogleProvider extends AbstractProvider implements IAuthCodeFlow, I
     private final String DEVICECODE_ENDPOINT = "https://oauth2.googleapis.com/device/code";
     private final String AUTHORIZATION_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
     private final String TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+    private final String USER_INFO_URL = "https://www.googleapis.com/userinfo/v2/me";
 
     //TODO: Overloads
     /**
@@ -64,5 +68,11 @@ public class GoogleProvider extends AbstractProvider implements IAuthCodeFlow, I
                 "&grant_type=urn:ietf:params:oauth:grant-type:device_code" +
                 "&device_code=" + deviceCodeResponse.getDeviceCode()
         );
+    }
+
+    @Override
+    public BasicUser getUser(String accessToken) throws OAuthException {
+        String resp = this.stringUrlToResponse(USER_INFO_URL, "GET", "", "Authorization: Bearer " + accessToken);
+        return BasicUser.fromJson(resp, "id", "email", "name");
     }
 }

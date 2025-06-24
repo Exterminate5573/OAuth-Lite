@@ -1,7 +1,6 @@
 package dev.exterminate.oauthlite.flows;
 
 import dev.exterminate.oauthlite.util.OAuthException;
-import lombok.Data;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.ByteArrayOutputStream;
@@ -17,6 +16,10 @@ import java.nio.charset.StandardCharsets;
 public interface IFlow {
 
     default String urlToResponse(URL url, String method, String encodedParams) throws OAuthException {
+        return urlToResponse(url, method, encodedParams, null);
+    }
+
+    default String urlToResponse(URL url, String method, String encodedParams, String headers) throws OAuthException {
         try {
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
 
@@ -26,6 +29,16 @@ public interface IFlow {
             connection.setRequestMethod(method);
             connection.setUseCaches(false);
             connection.setDoOutput(true);
+
+            if (headers != null && !headers.isEmpty()) {
+                String[] headerPairs = headers.split(",");
+                for (String headerPair : headerPairs) {
+                    String[] keyValue = headerPair.split(":", 2);
+                    if (keyValue.length == 2) {
+                        connection.setRequestProperty(keyValue[0].trim(), keyValue[1].trim());
+                    }
+                }
+            }
 
             OutputStream stream = connection.getOutputStream();
             stream.write(encodedParams.getBytes(StandardCharsets.UTF_8));
@@ -64,49 +77,15 @@ public interface IFlow {
         }
     }
 
-    default String encode(String s) throws UnsupportedEncodingException {
-        return URLEncoder.encode(s, "UTF-8");
+    default String stringUrlToResponse(String url, String method, String params, String headers) throws OAuthException {
+        try {
+            return urlToResponse(new URL(url), method, encode(params), headers);
+        } catch (MalformedURLException | UnsupportedEncodingException e) {
+            throw new OAuthException(e);
+        }
     }
 
-    @Data
-    class AuthFlowResponse {
-        private String accessToken;
-        private String refreshToken;
-        private int expiresIn;
-        private String scope;
-
-        //TODO: Dependency-less JSON parsing (This could be improved)
-        protected static AuthFlowResponse fromJson(String json) {
-            AuthFlowResponse response = new AuthFlowResponse();
-
-            json = json.trim().replaceAll("[{}\"]", ""); // remove braces and quotes
-            String[] pairs = json.split(",");
-
-            for (String pair : pairs) {
-                String[] keyValue = pair.trim().split(":", 2);
-                String key = keyValue[0].trim();
-                String value = keyValue[1].trim();
-
-                switch (key) {
-                    case "access_token":
-                        response.setAccessToken(value);
-                        break;
-                    case "refresh_token":
-                        response.setRefreshToken(value);
-                        break;
-                    case "expires_in":
-                        response.setExpiresIn(Integer.parseInt(value));
-                        break;
-                    case "scope":
-                        response.setScope(value);
-                        break;
-                    default:
-                        // Unknown field
-                        break;
-                }
-            }
-
-            return response;
-        }
+    default String encode(String s) throws UnsupportedEncodingException {
+        return URLEncoder.encode(s, "UTF-8");
     }
 }

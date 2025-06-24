@@ -1,5 +1,8 @@
 package dev.exterminate.oauthlite.defaultproviders;
 
+import dev.exterminate.oauthlite.data.AuthFlowResponse;
+import dev.exterminate.oauthlite.data.BasicUser;
+import dev.exterminate.oauthlite.data.DeviceCodeResponse;
 import dev.exterminate.oauthlite.flows.IAuthCodeFlow;
 import dev.exterminate.oauthlite.flows.ICredentialsFlow;
 import dev.exterminate.oauthlite.flows.IDeviceCodeFlow;
@@ -15,6 +18,7 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
     private final String DEVICECODE_ENDPOINT = "/oauth2/v2.0/devicecode";
     private final String AUTHORIZATION_ENDPOINT = "/oauth2/v2.0/authorize";
     private final String TOKEN_ENDPOINT = "/oauth2/v2.0/token";
+    private final String USER_INFO_URL = "https://graph.microsoft.com/v1.0/me";
 
     private final String tenant;
 
@@ -35,11 +39,10 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
     //TODO: Make this async?
     @Override
     public DeviceCodeResponse startDeviceCodeFlow() throws OAuthException {
-        //TODO: Custom scope
         return this.startDeviceCodeFlow(
                 OAUTH_URL + tenant + DEVICECODE_ENDPOINT,
                 "client_id=" + clientId
-                        + "&scope=email openid profile offline_access");
+                        + "&scope=" + scopes);
     }
 
 
@@ -84,4 +87,12 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
 
         return this.credentialsLogin_(OAUTH_URL + tenant + TOKEN_ENDPOINT, params);
     }
+
+    @Override
+    public BasicUser getUser(String accessToken) throws OAuthException {
+        String resp = this.stringUrlToResponse(USER_INFO_URL, "GET", "", "Authorization: Bearer " + accessToken);
+        return BasicUser.fromJson(resp, "id", "mail", "displayName");
+    }
+
+
 }

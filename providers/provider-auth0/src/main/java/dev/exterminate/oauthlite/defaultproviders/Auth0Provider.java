@@ -1,5 +1,8 @@
 package dev.exterminate.oauthlite.defaultproviders;
 
+import dev.exterminate.oauthlite.data.AuthFlowResponse;
+import dev.exterminate.oauthlite.data.BasicUser;
+import dev.exterminate.oauthlite.data.DeviceCodeResponse;
 import dev.exterminate.oauthlite.flows.IAuthCodeFlow;
 import dev.exterminate.oauthlite.flows.IDeviceCodeFlow;
 import dev.exterminate.oauthlite.providers.AbstractProvider;
@@ -20,7 +23,7 @@ public class Auth0Provider extends AbstractProvider implements IAuthCodeFlow, ID
      * @param scopes       The scopes requested by the OAuth provider.
      */
     public Auth0Provider(String clientId, String clientSecret, String scopes, String baseUrl) {
-        super(clientId, clientSecret, scopes);
+        super(clientId, clientSecret, scopes != null ? scopes : "email openid profile");
         this.baseUrl = baseUrl;
     }
 
@@ -64,5 +67,13 @@ public class Auth0Provider extends AbstractProvider implements IAuthCodeFlow, ID
                         "&grant_type=urn:ietf:params:oauth:grant-type:device_code" +
                         "&device_code=" + deviceCodeResponse.getDeviceCode()
         );
+    }
+
+    @Override
+    public BasicUser getUser(String accessToken) throws OAuthException {
+        String resp = this.stringUrlToResponse(baseUrl + "/userinfo", "GET", "", "Authorization: Bearer " + accessToken);
+        //TODO: I don't know the proper id field for Auth0, so I'm using "sub" for now.
+        //TODO: preferred_username or nickname? (I don't know enough about Auth0)
+        return  BasicUser.fromJson(resp, "sub", "email", "preferred_username");
     }
 }

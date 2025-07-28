@@ -7,7 +7,10 @@ import dev.exterminate.oauthlite.util.OAuthException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 //TODO: PKCE support
 public interface IAuthCodeFlow extends IFlow {
@@ -50,11 +53,67 @@ public interface IAuthCodeFlow extends IFlow {
      * @return A random state string.
      */
     default String createState() {
-        return java.util.UUID.randomUUID().toString();
+        return UUID.randomUUID().toString();
     }
 
     //TODO: Consider alternative http servers (such as NanoHttpd)
-    //TODO: Permanent server instance to avoid creating a new one each time?
+    /**
+     * Creates a HTTP Server to listen for the authorization code response.
+     *
+     * @param callback A callback to return all completed requests to
+     * @return A started HttpServer
+     */
+    default HttpServer createServer(Consumer<AuthCodeResponse> callback) {
+        HttpServer server;
+        try {
+            server = HttpServer.create(new InetSocketAddress(7866), 0);
+        } catch (IOException e) {
+            //TODO: Handle IOException properly
+            throw new RuntimeException(e);
+            //throw new OAuthException(e);
+        }
+
+        server.createContext("/callback", exchange -> {
+            AuthCodeResponse response = new AuthCodeResponse();
+            String query = exchange.getRequestURI().getQuery();
+            if (query != null) {
+                if (query.contains("error")) {
+                    // Send a response back to the client
+                    String responseBody = "There was an error during the OAuth flow. Please try again.";
+                    exchange.sendResponseHeaders(200, responseBody.length());
+                    exchange.getResponseBody().write(responseBody.getBytes());
+                    exchange.getResponseBody().close();
+                    response.setError(true);
+                    return;
+                }
+                String[] params = query.split("&");
+                for (String param : params) {
+                    String[] keyValue = param.split("=");
+                    if (keyValue.length == 2) {
+                        if ("code".equals(keyValue[0])) {
+                            response.setCode(keyValue[1]);
+                        } else if ("state".equals(keyValue[0])) {
+                            response.setState(keyValue[1]);
+                        }
+                    }
+                }
+            }
+
+            // Send a response back to the client
+            String responseBody = "Authorization code received. You can close this window.";
+            exchange.sendResponseHeaders(200, responseBody.length());
+            exchange.getResponseBody().write(responseBody.getBytes());
+            exchange.getResponseBody().close();
+
+            callback.accept(response);
+        });
+
+        server.setExecutor(null);
+        server.start();
+
+        return server;
+    }
+
     /**
      * Creates a HTTP Server to listen for the authorization code response.
      *
@@ -63,52 +122,12 @@ public interface IAuthCodeFlow extends IFlow {
      */
     default CompletableFuture<AuthCodeResponse> listenForResponse(String state) {
         return CompletableFuture.supplyAsync(() -> {
-            HttpServer server;
-            try {
-                server = HttpServer.create(new InetSocketAddress(7866), 0);
-            } catch (IOException e) {
-                //TODO: Handle IOException properly
-                throw new RuntimeException(e);
-                //throw new OAuthException(e);
-            }
 
-            AuthCodeResponse response = new AuthCodeResponse();
-            server.createContext("/callback", exchange -> {
-                String query = exchange.getRequestURI().getQuery();
-                if (query != null) {
-                    if (query.contains("error")) {
-                        // Send a response back to the client
-                        String responseBody = "There was an error during the OAuth flow. Please try again.";
-                        exchange.sendResponseHeaders(200, responseBody.length());
-                        exchange.getResponseBody().write(responseBody.getBytes());
-                        exchange.getResponseBody().close();
-                        response.setError(true);
-                        return;
-                    }
-                    String[] params = query.split("&");
-                    for (String param : params) {
-                        String[] keyValue = param.split("=");
-                        if (keyValue.length == 2) {
-                            if ("code".equals(keyValue[0])) {
-                                response.setCode(keyValue[1]);
-                            } else if ("state".equals(keyValue[0])) {
-                                response.setState(keyValue[1]);
-                            }
-                        }
-                    }
-                }
-
-                // Send a response back to the client
-                String responseBody = "Authorization code received. You can close this window.";
-                exchange.sendResponseHeaders(200, responseBody.length());
-                exchange.getResponseBody().write(responseBody.getBytes());
-                exchange.getResponseBody().close();
-            });
-            server.setExecutor(null);
-            server.start();
+            AtomicReference<AuthCodeResponse> response = new AtomicReference<>();
+            HttpServer server = createServer(response::set);
 
             // Wait for the response
-            while (!response.isError() && response.getCode() == null || !response.getState().equals(state)) {
+            while (!response.get().isError() && response.get().getCode() == null || !response.get().getState().equals(state)) {
                 try {
                     Thread.sleep(100); // Polling interval
                 } catch (InterruptedException e) {
@@ -117,7 +136,7 @@ public interface IAuthCodeFlow extends IFlow {
                 }
             }
             server.stop(1); // Stop the server after receiving the response
-            return response;
+            return response.get();
         });
     }
 

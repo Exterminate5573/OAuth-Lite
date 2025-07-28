@@ -21,6 +21,7 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
     private final String USER_INFO_URL = "https://graph.microsoft.com/v1.0/me";
 
     private final String tenant;
+    private final String redirectUri;
 
     //TODO: Overloads
     /**
@@ -30,10 +31,12 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
      * @param clientSecret The client secret of the application.
      * @param tenant       The tenant ID or "common" for multi-tenant applications.
      * @param scopes       The scopes to request during authentication.
+     * @param redirectUri  The redirect uri for the flow to return to
      */
-    public MicrosoftProvider(String clientId, String clientSecret, String tenant, String scopes) {
+    public MicrosoftProvider(String clientId, String clientSecret, String tenant, String scopes, String redirectUri) {
         super(clientId, clientSecret, scopes != null ? scopes : "email openid profile offline_access");
         this.tenant = tenant != null ? tenant : "common"; // Default to common if tenant is not provided
+        this.redirectUri = redirectUri != null ? redirectUri : defaultRedirectUrl;
     }
 
     //TODO: Make this async?
@@ -58,7 +61,7 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
                 "?client_id=" + clientId +
                 "&response_type=code" +
                 "&scope=" + scopes +
-                "&redirect_uri=" + getRedirectUrl() +
+                "&redirect_uri=" + redirectUri +
                 "&response_mode=query" +
                 "&state=" + state;
     }
@@ -69,7 +72,7 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
                 "client_id=" + clientId +
                 "&grant_type=authorization_code" +
                 "&code=" + code +
-                "&redirect_uri=" + getRedirectUrl() +
+                "&redirect_uri=" + redirectUri +
                 "&scope=" + scopes +
                 //TODO: Optional client secret
                 "&client_secret=" + clientSecret);

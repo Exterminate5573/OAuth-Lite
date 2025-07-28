@@ -37,15 +37,8 @@ public interface IAuthCodeFlow extends IFlow {
      */
     String buildAuthorizationUrl(String state);
 
-    /**
-     * Returns the URL to which the user should be redirected after authorization.
-     *
-     * @return The redirect URL.
-     */
-    default String getRedirectUrl() {
-        //Random port to avoid conflicts
-        return "http://localhost:7866/callback"; // Default redirect URL, can be overridden
-    }
+
+    String defaultRedirectUrl = "http://localhost:7866/callback";
 
     /**
      * Creates a random state parameter to prevent CSRF attacks.

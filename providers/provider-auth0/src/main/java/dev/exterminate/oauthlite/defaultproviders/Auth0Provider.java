@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 public class Auth0Provider extends AbstractProvider implements IAuthCodeFlow, IDeviceCodeFlow {
 
     private final String baseUrl;
+    private final String redirectUri;
 
     /**
      * Constructs an Auth0Provider with the specified client ID, client secret, and scopes.
@@ -22,9 +23,10 @@ public class Auth0Provider extends AbstractProvider implements IAuthCodeFlow, ID
      * @param clientSecret The client secret for the OAuth provider.
      * @param scopes       The scopes requested by the OAuth provider.
      */
-    public Auth0Provider(String clientId, String clientSecret, String scopes, String baseUrl) {
+    public Auth0Provider(String clientId, String clientSecret, String scopes, String baseUrl, String redirectUri) {
         super(clientId, clientSecret, scopes != null ? scopes : "email openid profile");
         this.baseUrl = baseUrl;
+        this.redirectUri = redirectUri != null ? redirectUri : defaultRedirectUrl;
     }
 
     @Override
@@ -32,7 +34,7 @@ public class Auth0Provider extends AbstractProvider implements IAuthCodeFlow, ID
         return baseUrl + "/authorize?client_id=" + getClientId() +
                 "&response_type=code" +
                 "&scope=" + getScopes() +
-                "&redirect_uri=" + getRedirectUrl() +
+                "&redirect_uri=" + redirectUri +
                 "&state=" + state;
     }
 
@@ -45,7 +47,7 @@ public class Auth0Provider extends AbstractProvider implements IAuthCodeFlow, ID
                         "&client_id=" + clientId +
                         "&client_secret=" + clientSecret +
                         "&code=" + code +
-                        "&redirect_uri=" + getRedirectUrl()
+                        "&redirect_uri=" + redirectUri
         );
     }
 

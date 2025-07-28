@@ -18,6 +18,8 @@ public class GoogleProvider extends AbstractProvider implements IAuthCodeFlow, I
     private final String TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
     private final String USER_INFO_URL = "https://www.googleapis.com/userinfo/v2/me";
 
+    private final String redirectUri;
+
     //TODO: Overloads
     /**
      * Constructs a GoogleProvider with the specified client ID, client secret, and scopes.
@@ -26,15 +28,16 @@ public class GoogleProvider extends AbstractProvider implements IAuthCodeFlow, I
      * @param clientSecret The client secret of the application.
      * @param scopes       The scopes to request during authentication. Defaults to email and profile if null.
      */
-    public GoogleProvider(String clientId, String clientSecret, String scopes) {
+    public GoogleProvider(String clientId, String clientSecret, String scopes, String redirectUri) {
         super(clientId, clientSecret, scopes != null ? scopes : "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile");
+        this.redirectUri = redirectUri != null ? redirectUri : defaultRedirectUrl;
     }
 
     @Override
     public String buildAuthorizationUrl(String state) {
         return AUTHORIZATION_ENDPOINT +
                 "?client_id=" + getClientId() +
-                "&redirect_uri=" + getRedirectUrl() +
+                "&redirect_uri=" + redirectUri +
                 "&response_type=code" +
                 "&scope=" + getScopes() +
                 "&access_type=offline" +
@@ -46,7 +49,7 @@ public class GoogleProvider extends AbstractProvider implements IAuthCodeFlow, I
         return this.completeFlow(code, TOKEN_ENDPOINT,
                 "client_id=" + getClientId() +
                 "&client_secret=" + getClientSecret() +
-                "&redirect_uri=" + getRedirectUrl() +
+                "&redirect_uri=" + redirectUri +
                 "&grant_type=authorization_code" +
                 "&code=" + code);
     }

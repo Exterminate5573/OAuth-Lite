@@ -34,8 +34,8 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
      * @param redirectUri  The redirect uri for the flow to return to
      */
     public MicrosoftProvider(String clientId, String clientSecret, String tenant, String scopes, String redirectUri) {
-        super(clientId, clientSecret, scopes != null ? scopes : "email openid profile offline_access");
-        this.tenant = tenant != null ? tenant : "common"; // Default to common if tenant is not provided
+        super(clientId, clientSecret, scopes != null && !scopes.isEmpty() ? scopes : "email openid profile offline_access");
+        this.tenant = tenant != null && !tenant.isEmpty() ? tenant : "common"; // Default to common if tenant is not provided
         this.redirectUri = redirectUri != null ? redirectUri : defaultRedirectUrl;
     }
 

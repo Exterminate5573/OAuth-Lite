@@ -11,7 +11,12 @@ public class BasicUser {
     private String email;
     private String username;
 
-    public static BasicUser fromJson(String json, String idKey, String emailKey, String usernameKey) {
+    public static BasicUser fromJson(String json, String idKey, String emailKey, String usernameKey) throws OAuthException {
+        if (json == null || json.isEmpty() || json.contains("error")) {
+            //TODO: Throw error instead of whole JSON
+            throw new OAuthException("Invalid JSON response: " + json);
+        }
+
         BasicUser user = new BasicUser();
 
         json = json.trim().replaceAll("[{}\"]", ""); // remove braces and quotes

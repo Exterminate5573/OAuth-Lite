@@ -12,6 +12,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 public interface IFlow {
 
@@ -39,11 +40,12 @@ public interface IFlow {
                     }
                 }
             }
-
-            OutputStream stream = connection.getOutputStream();
-            stream.write(encodedParams.getBytes(StandardCharsets.UTF_8));
-            stream.flush();
-            stream.close();
+            if (Objects.equals(method, "POST")) {
+                OutputStream stream = connection.getOutputStream();
+                stream.write(encodedParams.getBytes(StandardCharsets.UTF_8));
+                stream.flush();
+                stream.close();
+            }
 
             InputStream inputStream = null;
             if (100 <= connection.getResponseCode() && connection.getResponseCode() <= 399) {
@@ -86,6 +88,26 @@ public interface IFlow {
     }
 
     default String encode(String s) throws UnsupportedEncodingException {
-        return URLEncoder.encode(s, "UTF-8");
+        if (s == null || s.isEmpty()) {
+            return "";
+        }
+
+        // Encode each parameter separately
+        StringBuilder encoded = new StringBuilder();
+        String[] pairs = s.split("&");
+        for (String pair : pairs) {
+            String[] keyValue = pair.split("=", 2);
+            if (keyValue.length == 2) {
+                String key = keyValue[0].trim();
+                String value = URLEncoder.encode(keyValue[1], StandardCharsets.UTF_8.name());
+                if (encoded.length() > 0) {
+                    encoded.append("&");
+                }
+                encoded.append(key).append("=").append(value);
+            } else {
+                throw new UnsupportedEncodingException("Invalid parameter format: " + pair);
+            }
+        }
+        return encoded.toString();
     }
 }

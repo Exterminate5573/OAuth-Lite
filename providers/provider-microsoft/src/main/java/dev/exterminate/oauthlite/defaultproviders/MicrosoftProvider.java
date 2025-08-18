@@ -18,7 +18,7 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
     private final String DEVICECODE_ENDPOINT = "/oauth2/v2.0/devicecode";
     private final String AUTHORIZATION_ENDPOINT = "/oauth2/v2.0/authorize";
     private final String TOKEN_ENDPOINT = "/oauth2/v2.0/token";
-    private final String USER_INFO_URL = "https://graph.microsoft.com/v1.0/me";
+    private final String OIDC_URL = "https://graph.microsoft.com/oidc/userinfo";
 
     private final String tenant;
     private final String redirectUri;
@@ -93,8 +93,10 @@ public class MicrosoftProvider extends AbstractProvider implements IAuthCodeFlow
 
     @Override
     public BasicUser getUser(String accessToken) throws OAuthException {
-        String resp = this.stringUrlToResponse(USER_INFO_URL, "GET", "", "Authorization: Bearer " + accessToken);
-        return BasicUser.fromJson(resp, "id", "mail", "displayName");
+        String resp = this.stringUrlToResponse(OIDC_URL, "GET", "", "Authorization: Bearer " + accessToken);
+        //TODO: Proper ID check (not subject but an actual id)
+        //TODO: Seperate function for OIDC compared to MS Graph profile request
+        return BasicUser.fromJson(resp, "sub", "email", "name");
     }
 
 
